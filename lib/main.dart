@@ -14,79 +14,6 @@ void main() {
 
 String text = "";
 
-class WordRow extends StatelessWidget {
-  const WordRow(this.buttonTxt, this.phrase, this.foo);
-
-  final String buttonTxt;
-  final String phrase;
-  final Function foo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(buttonTxt),
-        TextButton(
-            onPressed: () {
-              text = phrase;
-              foo();
-            },
-            child: Text(phrase))
-      ],
-    );
-
-    //return Text("Hello");
-    // return Expanded(child: Row(
-    //   crossAxisAlignment: CrossAxisAlignment.stretch,
-    //   mainAxisAlignment: MainAxisAlignment.center,
-    //   children: [
-    //     Expanded(
-    //         child: ListTile(
-    //       title: Text(phrase),
-    //     )),
-    //     Expanded(child: TextButton(onPressed: () => {}, child: Text(buttonTxt)))
-    //   ],
-    // ));
-  }
-}
-
-class RandomWords extends StatefulWidget {
-  const RandomWords({super.key});
-
-  @override
-  State<RandomWords> createState() => _RandomWordsState();
-}
-
-class _RandomWordsState extends State<RandomWords> {
-  final _suggestions = <WordPair>[];
-  final _biggerFont = const TextStyle(fontSize: 18);
-
-  @override
-  Widget build(BuildContext context) {
-    final wordPair = WordPair.random();
-    return Column(
-      children: [
-        Expanded(
-            child: ListView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemBuilder: (context, i) {
-            if (i.isOdd) return const Divider();
-            final index = i ~/ 2;
-            if (index >= _suggestions.length) {
-              _suggestions.addAll((generateWordPairs().take(5)));
-            }
-            return WordRow(i.toString(), _suggestions[index].asPascalCase, () {
-              setState(() {});
-            });
-          },
-          itemCount: _suggestions.length < 50 ? 50 : _suggestions.length,
-        )),
-        Expanded(child: Text(text), flex: 0)
-      ],
-    );
-  }
-}
-
 class StatList extends StatefulWidget {
   const StatList({super.key});
   @override
@@ -98,6 +25,7 @@ class _StatListState extends State<StatList> {
   final Future<List<Activity>> _activities = getActivities();
   String groupValue = "Idle";
   String currentCategory = categories[0];
+  int currentDayTime = dayTimes[(dayTimes.length/2).floor()];
   int now = (DateTime.now().millisecondsSinceEpoch).round();
   Timer t = Timer(Duration(seconds: 1), () {});
   String pushValue = "";
@@ -110,7 +38,6 @@ class _StatListState extends State<StatList> {
           if (data.isEmpty) {
             data = snapshot.data ?? List<Activity>.empty();
           }
-          FullStats stats = getFullStats(data);
           t.cancel();
           t = Timer(Duration(minutes: 1), () {
             if (groupValue != "Idle") {
@@ -176,6 +103,9 @@ class _StatListState extends State<StatList> {
                             ],
                           );
                         }
+                        data.forEach((element) =>
+                            element.setTotalTimeForPastDays(currentDayTime));
+                        var stats = getFullStats(data, currentDayTime);
                         return activityToWidget(data[index - 1], () {
                           return Radio(
                             value: data[index - 1].name,
@@ -195,7 +125,19 @@ class _StatListState extends State<StatList> {
                       itemCount:
                           data.length + 2, // 1 for header other for entry box
                     )),
-                Expanded(flex: 1, child: Container())
+                Expanded(
+                  flex: 1,
+                  child: Column(children:[Text("Past Days"), DropdownButton(
+                      value: currentDayTime,
+                      items: dayTimes
+                          .map((e) => DropdownMenuItem<int>(
+                              value: e, child: Text(e.toString())))
+                          .toList(),
+                      onChanged: (val) {
+                        currentDayTime = val ?? dayTimes[0];
+                        setState(() {});
+                      }), ]),
+                )
                 //Container(child: Text(stats.totalTimeSpent.toString())))
               ]);
         } else {

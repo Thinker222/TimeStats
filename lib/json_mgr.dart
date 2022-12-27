@@ -36,6 +36,8 @@ const List<String> categories = [
   "learning",
 ];
 
+const List<int> dayTimes = [1, 2, 3, 7, 14, 21, 30, 60, 90];
+
 List<Color> colors = [
   Colors.blue,
   Colors.red,
@@ -67,7 +69,18 @@ class Activity {
 
   void addEntry(Entry entr) {
     entries.add(entr);
-    totalTime += (entr.duration / 1000).round();
+  }
+
+  void setTotalTimeForPastDays(int days) {
+    totalTime = 0;
+    totalTime = entries
+        .where((entry) => DateTime.fromMillisecondsSinceEpoch(
+                entry.startTime + entry.duration)
+            .isAfter(DateTime.now().subtract(Duration(days: days))))
+        .fold(0, (currentVal, element) {
+      currentVal += (element.duration / 1000).round();
+      return currentVal;
+    });
   }
 }
 
@@ -87,15 +100,12 @@ Future<List<Activity>> getActivities() async {
             .isAfter(DateTime.now().subtract(Duration(days: 90)))) {
           activity.addEntry(Entry(entry[0], entry[1]));
         }
+        activity.setTotalTimeForPastDays(90);
       });
 
       list.add(activity);
     });
-  } catch (e) {
-    // list.add(Activity("Minecraft", "games"));
-    // list.add(Activity("Youtube", "entertainment"));
-    // list.add(Activity("Rust Book", "learning"));
-  }
+  } catch (e) {}
 
   list.insert(0, Activity("Idle", ""));
   return list;
@@ -125,7 +135,7 @@ void storeActivities(List<Activity> activities) async {
 }
 
 // Fix before epoch ends
-FullStats getFullStats(List<Activity> activities) {
+FullStats getFullStats(List<Activity> activities, int days) {
   int totalTime = activities.fold(
       0, (previousValue, element) => previousValue + element.totalTime);
   int lowestTime = activities.fold(
@@ -151,8 +161,14 @@ FullStats getFullStats(List<Activity> activities) {
     maxTime = 1;
     lowestTime = 0;
   }
+  if (DateTime.now()
+      .subtract(Duration(days: days))
+      .isAfter(DateTime.fromMillisecondsSinceEpoch(lowestTime))) {
+    lowestTime =
+        DateTime.now().subtract(Duration(days: days)).millisecondsSinceEpoch;
+  }
 
-  return FullStats(totalTime, maxTime - lowestTime);
+  return FullStats(totalTime, ((maxTime - lowestTime) / 1000).round());
 }
 
 Widget getTextBox(String text) {
@@ -181,13 +197,16 @@ Widget activityHeader() {
 
 Widget activityToWidget(
     Activity activity, Function generateRadioButton, FullStats stats) {
+  // print(activity.name);
+  // print(activity.totalTime);
+  // print(stats.totalTimeSpent);
+  // print("----");
   String timeSpent =
       (100 * activity.totalTime / stats.totalTimeSpent).toStringAsFixed(2);
   String timeDurationSpent =
-      (100 * activity.totalTime / (stats.totalDuration / 1000))
-          .toStringAsFixed(2);
-  int timeInHours = (activity.totalTime / 3600).round();
-  int minutes = (activity.totalTime / 60).round();
+      ((100 * activity.totalTime) / (stats.totalDuration)).toStringAsFixed(2);
+  int timeInHours = (activity.totalTime / 3600).floor();
+  int minutes = (activity.totalTime / 60 % 60).floor();
   String minuteString = minutes.toString();
   if (minuteString.length == 1) {
     minuteString = "0" + minuteString;

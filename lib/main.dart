@@ -25,7 +25,7 @@ class _StatListState extends State<StatList> {
   final Future<List<Activity>> _activities = getActivities();
   String groupValue = "Idle";
   String currentCategory = categories[0];
-  int currentDayTime = dayTimes[(dayTimes.length/2).floor()];
+  int currentDayTime = dayTimes[(dayTimes.length / 2).floor()];
   int now = (DateTime.now().millisecondsSinceEpoch).round();
   Timer t = Timer(Duration(seconds: 1), () {});
   String pushValue = "";
@@ -106,6 +106,21 @@ class _StatListState extends State<StatList> {
                         data.forEach((element) =>
                             element.setTotalTimeForPastDays(currentDayTime));
                         var stats = getFullStats(data, currentDayTime);
+                        data.sort((a, b) {
+                          if(a.name == "Idle") {
+                            return -1;
+                          }
+                          if(b.name == "Idle") {
+                            return 1;
+                          }
+                          if (a.totalTime < b.totalTime) {
+                            return 1;
+                          } else if (b.totalTime < a.totalTime) {
+                            return -1;
+                          } else {
+                            return 0;
+                          }
+                        });
                         return activityToWidget(data[index - 1], () {
                           return Radio(
                             value: data[index - 1].name,
@@ -127,16 +142,19 @@ class _StatListState extends State<StatList> {
                     )),
                 Expanded(
                   flex: 1,
-                  child: Column(children:[Text("Past Days"), DropdownButton(
-                      value: currentDayTime,
-                      items: dayTimes
-                          .map((e) => DropdownMenuItem<int>(
-                              value: e, child: Text(e.toString())))
-                          .toList(),
-                      onChanged: (val) {
-                        currentDayTime = val ?? dayTimes[0];
-                        setState(() {});
-                      }), ]),
+                  child: Column(children: [
+                    Text("Past Days"),
+                    DropdownButton(
+                        value: currentDayTime,
+                        items: dayTimes
+                            .map((e) => DropdownMenuItem<int>(
+                                value: e, child: Text(e.toString())))
+                            .toList(),
+                        onChanged: (val) {
+                          currentDayTime = val ?? dayTimes[0];
+                          setState(() {});
+                        }),
+                  ]),
                 )
                 //Container(child: Text(stats.totalTimeSpent.toString())))
               ]);

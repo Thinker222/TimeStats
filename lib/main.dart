@@ -55,6 +55,9 @@ class _StatListState extends State<StatList> {
               storeActivities(data);
             }
           });
+          data.forEach(
+              (element) => element.setTotalTimeForPastDays(currentDayTime));
+          var stats = getFullStats(data, currentDayTime);
           return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,14 +106,12 @@ class _StatListState extends State<StatList> {
                             ],
                           );
                         }
-                        data.forEach((element) =>
-                            element.setTotalTimeForPastDays(currentDayTime));
-                        var stats = getFullStats(data, currentDayTime);
+
                         data.sort((a, b) {
-                          if(a.name == "Idle") {
+                          if (a.name == "Idle") {
                             return -1;
                           }
-                          if(b.name == "Idle") {
+                          if (b.name == "Idle") {
                             return 1;
                           }
                           if (a.totalTime < b.totalTime) {
@@ -143,7 +144,7 @@ class _StatListState extends State<StatList> {
                 Expanded(
                   flex: 1,
                   child: Column(children: [
-                    Text("Past Days"),
+                    const Text("Past Days"),
                     DropdownButton(
                         value: currentDayTime,
                         items: dayTimes
@@ -154,6 +155,21 @@ class _StatListState extends State<StatList> {
                           currentDayTime = val ?? dayTimes[0];
                           setState(() {});
                         }),
+                    Text("Total Time ${getTimeString(stats.totalTimeSpent)}"),
+                    Text(
+                        "Total Duration ${getTimeString(stats.totalDuration)}"),
+                    Text(
+                        "Percent of total duration ${stats.percentOfTotalDuration.toStringAsFixed(2)}%"),
+                    Column(
+                      children: stats.catStats.map((e) {
+                        String val =
+                            "${e.category}\nTotal time spent ${getTimeString(e.totalTimeSpent)}\nPercent of total time ${e.totalTimeSpentPercent.toStringAsFixed(2)}%";
+                        return Text(
+                          val,
+                          textAlign: TextAlign.left,
+                        );
+                      }).toList(),
+                    )
                   ]),
                 )
                 //Container(child: Text(stats.totalTimeSpent.toString())))

@@ -13,11 +13,24 @@ const String ENTRIES = "Entries";
 const String NAME = "Name";
 const String CATEGORY = "Category";
 
+class CategoryStat {
+  String category;
+  Color color;
+  int totalTimeSpent;
+  double totalTimeSpentPercent;
+
+  CategoryStat(this.category, this.color, this.totalTimeSpent,
+      this.totalTimeSpentPercent);
+}
+
 class FullStats {
   int totalTimeSpent;
   int totalDuration;
+  double percentOfTotalDuration;
+  List<CategoryStat> catStats;
 
-  FullStats(this.totalTimeSpent, this.totalDuration);
+  FullStats(this.totalTimeSpent, this.totalDuration,
+      this.percentOfTotalDuration, this.catStats);
 }
 
 class Entry {
@@ -168,7 +181,28 @@ FullStats getFullStats(List<Activity> activities, int days) {
         DateTime.now().subtract(Duration(days: days)).millisecondsSinceEpoch;
   }
 
-  return FullStats(totalTime, ((maxTime - lowestTime) / 1000).round());
+  int totalDuration = ((maxTime - lowestTime) / 1000).round();
+
+  double percentOfTotalDuration = ((totalTime / totalDuration) * 100);
+
+  var categories = Set();
+  categories
+      .addAll(activities.where((e) => e.name != "Idle").map((e) => e.category));
+  List<CategoryStat> catStats = categories.map(
+    (e) {
+      String category = e;
+      int totalTimeCategory = activities
+          .where((element) => element.category == category)
+          .fold(
+              0, (previousValue, element) => previousValue + element.totalTime);
+      double percentOfTotalDuration = ((totalTimeCategory / totalTime) * 100);
+      Color color = getColor(category);
+      return CategoryStat(
+          category, color, totalTimeCategory, percentOfTotalDuration);
+    },
+  ).toList();
+
+  return FullStats(totalTime, totalDuration, percentOfTotalDuration, catStats);
 }
 
 Widget getTextBox(String text) {
@@ -195,6 +229,17 @@ Widget activityHeader() {
       ));
 }
 
+String getTimeString(int totalTime) {
+  int timeInHours = (totalTime / 3600).floor();
+  int minutes = (totalTime / 60 % 60).floor();
+  String minuteString = minutes.toString();
+  if (minuteString.length == 1) {
+    minuteString = "0" + minuteString;
+  }
+  String timeString = timeInHours.toString() + ":" + minuteString;
+  return timeString;
+}
+
 Widget activityToWidget(
     Activity activity, Function generateRadioButton, FullStats stats) {
   // print(activity.name);
@@ -205,13 +250,8 @@ Widget activityToWidget(
       (100 * activity.totalTime / stats.totalTimeSpent).toStringAsFixed(2);
   String timeDurationSpent =
       ((100 * activity.totalTime) / (stats.totalDuration)).toStringAsFixed(2);
-  int timeInHours = (activity.totalTime / 3600).floor();
-  int minutes = (activity.totalTime / 60 % 60).floor();
-  String minuteString = minutes.toString();
-  if (minuteString.length == 1) {
-    minuteString = "0" + minuteString;
-  }
-  String timeString = timeInHours.toString() + ":" + minuteString;
+
+  String timeString = getTimeString(activity.totalTime);
 
   return Container(
       decoration: BoxDecoration(

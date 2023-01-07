@@ -49,7 +49,7 @@ const List<String> categories = [
   "learning",
 ];
 
-const List<int> dayTimes = [1, 2, 3, 7, 14, 21, 30, 60, 90];
+const List<int> dayTimes = [0, 1, 2, 3, 7, 14, 21, 30, 60, 90];
 
 List<Color> colors = [
   Colors.blue,
@@ -86,6 +86,8 @@ class Activity {
 
   void setTotalTimeForPastDays(int days) {
     totalTime = 0;
+    if(days != 0)
+    {
     totalTime = entries
         .where((entry) => DateTime.fromMillisecondsSinceEpoch(
                 entry.startTime + entry.duration)
@@ -94,6 +96,18 @@ class Activity {
       currentVal += (element.duration / 1000).round();
       return currentVal;
     });
+    }
+    else
+    {
+      totalTime = entries
+        .where((entry) => DateTime.fromMillisecondsSinceEpoch(
+                entry.startTime + entry.duration)
+            .isAfter(DateTime.now().subtract(Duration(hours: DateTime.now().hour))))
+        .fold(0, (currentVal, element) {
+      currentVal += (element.duration / 1000).round();
+      return currentVal;
+    });
+    }
   }
 }
 
@@ -174,11 +188,17 @@ FullStats getFullStats(List<Activity> activities, int days) {
     maxTime = 1;
     lowestTime = 0;
   }
-  if (DateTime.now()
-      .subtract(Duration(days: days))
+  var earliestTime; 
+  if(days != 0 ) {
+    earliestTime = DateTime.now().subtract(Duration(days: days));
+  }
+  else {
+    earliestTime = DateTime.now().subtract(Duration(hours: DateTime.now().hour)).subtract(Duration(minutes: DateTime.now().minute)).subtract(Duration(seconds: DateTime.now().second));
+  }
+  if (earliestTime
       .isAfter(DateTime.fromMillisecondsSinceEpoch(lowestTime))) {
     lowestTime =
-        DateTime.now().subtract(Duration(days: days)).millisecondsSinceEpoch;
+       earliestTime.millisecondsSinceEpoch;
   }
 
   int totalDuration = ((maxTime - lowestTime) / 1000).round();

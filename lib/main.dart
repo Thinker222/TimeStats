@@ -25,7 +25,7 @@ class _StatListState extends State<StatList> {
   final Future<List<Activity>> _activities = getActivities();
   String groupValue = "Idle";
   String currentCategory = categories[0];
-  int currentDayTime = dayTimes[(dayTimes.length / 2).floor()];
+  int currentDayTime = 0;//dayTimes[(dayTimes.length / 2).floor()];
   int now = (DateTime.now().millisecondsSinceEpoch).round();
   Timer t = Timer(Duration(seconds: 1), () {});
   String pushValue = "";
